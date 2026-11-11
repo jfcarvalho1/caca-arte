@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caça à Arte</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:12px;
+margin-top:20px;
+}
+
+button{
+padding:16px;
+border:none;
+border-radius:12px;
+background:#1565c0;
+color:white;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+}
+
+button:hover{
+background:#0d47a1;
+}
+
+#todos{
+background:#008f39;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎨 Caça à Arte</h1>
+
+<button id="todos">🌍 Pesquisar Todos os Artistas</button>
+
+<div class="grid" id="artistas"></div>
+
+<script>
+
+const artistas = [
+"Paula Rego",
+"Cruzeiro Seixas",
+"Vieira da Silva",
+"Almada Negreiros",
+"Júlio Resende",
+"Amadeo de Souza-Cardoso",
+"António Dacosta",
+"Mário Cesariny",
+"Eduardo Nery",
+"Manuel Cargaleiro",
+"Júlio Pomar",
+"Graça Morais",
+"José de Guimarães"
+];
+
+const sites = [
+"https://www.google.com/search?q=site:p55.art+",
+"https://www.google.com/search?q=site:catawiki.com+",
+"https://www.google.com/search?q=site:ebay.com+",
+"https://www.google.com/search?q=site:abebooks.com+",
+"https://www.google.com/search?q=site:inlibris.com+",
+"https://www.google.com/search?q=site:invaluable.com+",
+"https://www.google.com/search?q=site:liveauctioneers.com+"
+];
+
+function pesquisar(artista){
+sites.forEach(site=>{
+window.open(site + encodeURIComponent(artista), "_blank");
+});
+}
+
+const div=document.getElementById("artistas");
+
+artistas.forEach(nome=>{
+const btn=document.createElement("button");
+btn.textContent=nome;
+btn.onclick=()=>pesquisar(nome);
+div.appendChild(btn);
+});
+
+document.getElementById("todos").onclick=()=>{
+artistas.forEach(nome=>pesquisar(nome));
+};
+
+</script>
+
+</body>
+</html>
