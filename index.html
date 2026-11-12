@@ -2,63 +2,170 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Caça à Arte</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>🎨 Caça à Arte</title>
 
 <style>
+
+*{
+box-sizing:border-box;
+}
+
 body{
-font-family:Arial,sans-serif;
-background:#f5f5f5;
 margin:0;
-padding:20px;
+padding:15px;
+background:#f2f2f7;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 
 h1{
 text-align:center;
+margin:10px 0 20px;
+font-size:30px;
 }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:12px;
-margin-top:20px;
-}
-
-button{
-padding:16px;
-border:none;
-border-radius:12px;
-background:#1565c0;
-color:white;
+input,
+select{
+width:100%;
+padding:14px;
 font-size:16px;
-font-weight:bold;
+border-radius:12px;
+border:1px solid #d1d1d6;
+margin-bottom:10px;
+background:white;
+}
+
+.categorias{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin:15px 0;
+}
+
+.categoria{
+border:none;
+border-radius:14px;
+padding:18px;
+font-size:17px;
+font-weight:700;
+color:white;
 cursor:pointer;
 }
 
-button:hover{
-background:#0d47a1;
+.obras{background:#007aff;}
+.reproducoes{background:#5856d6;}
+.livros{background:#34c759;}
+.oportunidades{background:#ff9500;}
+
+.info{
+text-align:center;
+color:#666;
+font-size:14px;
+margin-bottom:15px;
 }
 
-#todos{
-background:#008f39;
+.artistas{
+display:grid;
+grid-template-columns:1fr;
+gap:8px;
 }
+
+.artista{
+background:white;
+border:none;
+border-radius:12px;
+padding:15px;
+text-align:left;
+font-size:16px;
+font-weight:600;
+box-shadow:0 2px 6px rgba(0,0,0,.08);
+cursor:pointer;
+}
+
+.artista:hover{
+background:#eaf3ff;
+}
+
+.activa{
+outline:4px solid rgba(0,122,255,.25);
+}
+
+@media (min-width:768px){
+
+.artistas{
+grid-template-columns:repeat(2,1fr);
+}
+
+.categorias{
+grid-template-columns:repeat(4,1fr);
+}
+
+}
+
 </style>
 </head>
-
 <body>
 
 <h1>🎨 Caça à Arte</h1>
 
-<button id="todos">🌍 Pesquisar Todos os Artistas</button>
+<input
+id="pesquisa"
+type="text"
+placeholder="🔍 Procurar artista..."
+>
 
-<div class="grid" id="artistas"></div>
+<select id="ordenacao">
+<option value="price_asc">Preço ↑</option>
+<option value="price_desc">Preço ↓</option>
+<option value="recent">Mais recentes</option>
+</select>
+
+<div class="categorias">
+
+<button
+class="categoria obras activa"
+id="btn-obras"
+onclick="selecionarCategoria('obras')">
+🎨 Obras
+</button>
+
+<button
+class="categoria reproducoes"
+id="btn-reproducoes"
+onclick="selecionarCategoria('reproducoes')">
+🖼️ Reproduções
+</button>
+
+<button
+class="categoria livros"
+id="btn-livros"
+onclick="selecionarCategoria('livros')">
+📚 Livros
+</button>
+
+<button
+class="categoria oportunidades"
+id="btn-oportunidades"
+onclick="selecionarCategoria('oportunidades')">
+💎 Oportunidades
+</button>
+
+</div>
+
+<div class="info">
+Escolhe uma categoria e depois toca no artista.
+</div>
+
+<div id="artistas" class="artistas"></div>
 
 <script>
 
 const artistas = [
+
 "Paula Rego",
 "Cruzeiro Seixas",
-"Vieira da Silva",
+"Maria Helena Vieira da Silva",
 "Almada Negreiros",
 "Júlio Resende",
 "Amadeo de Souza-Cardoso",
@@ -68,37 +175,168 @@ const artistas = [
 "Manuel Cargaleiro",
 "Júlio Pomar",
 "Graça Morais",
-"José de Guimarães"
+"José de Guimarães",
+"João Cutileiro",
+"Nadir Afonso"
+
 ];
 
-const sites = [
-"https://www.google.com/search?q=site:p55.art+",
-"https://www.google.com/search?q=site:catawiki.com+",
-"https://www.google.com/search?q=site:ebay.com+",
-"https://www.google.com/search?q=site:abebooks.com+",
-"https://www.google.com/search?q=site:inlibris.com+",
-"https://www.google.com/search?q=site:invaluable.com+",
-"https://www.google.com/search?q=site:liveauctioneers.com+"
-];
+let categoriaActual = "obras";
 
-function pesquisar(artista){
-sites.forEach(site=>{
-window.open(site + encodeURIComponent(artista), "_blank");
-});
+function ordemEBay(){
+
+const ordem =
+document.getElementById("ordenacao").value;
+
+if(ordem==="price_asc") return "&_sop=15";
+if(ordem==="price_desc") return "&_sop=16";
+if(ordem==="recent") return "&_sop=10";
+
+return "";
+
 }
 
-const div=document.getElementById("artistas");
+function abrir(urls){
 
-artistas.forEach(nome=>{
-const btn=document.createElement("button");
-btn.textContent=nome;
-btn.onclick=()=>pesquisar(nome);
-div.appendChild(btn);
+urls.forEach(url=>{
+window.open(url,"_blank");
 });
 
-document.getElementById("todos").onclick=()=>{
-artistas.forEach(nome=>pesquisar(nome));
+}
+
+function pesquisar(artista){
+
+let termo = artista;
+
+if(categoriaActual==="reproducoes"){
+termo += " signed numbered lithograph serigraph gravura";
+}
+
+if(categoriaActual==="livros"){
+termo += " catalogue first edition signed copy autografado";
+}
+
+if(categoriaActual==="oportunidades"){
+termo += " attributed after school of unsigned unknown artist estate collection";
+}
+
+let urls = [];
+
+if(categoriaActual==="livros"){
+
+urls = [
+
+"https://www.abebooks.com/servlet/SearchResults?kn=" + encodeURIComponent(termo),
+
+"https://www.ebay.com/sch/i.html?\_nkw="
++ encodeURIComponent(termo)
++ ordemEBay(),
+
+"https://www.vinted.pt/catalog?search\_text="
++ encodeURIComponent(termo),
+
+"https://es.wallapop.com/app/search?keywords="
++ encodeURIComponent(termo),
+
+"https://www.todocoleccion.net/busqueda?bu="
++ encodeURIComponent(termo)
+
+];
+
+}else{
+
+urls = [
+
+"https://www.ebay.com/sch/i.html?\_nkw="
++ encodeURIComponent(termo)
++ ordemEBay(),
+
+"https://www.catawiki.com/en/s?q="
++ encodeURIComponent(termo),
+
+"https://www.vinted.pt/catalog?search\_text="
++ encodeURIComponent(termo),
+
+"https://es.wallapop.com/app/search?keywords="
++ encodeURIComponent(termo),
+
+"https://www.olx.pt/d/anuncios/q-"
++ encodeURIComponent(termo)
+
+];
+
+}
+
+abrir(urls);
+
+}
+
+function seleccionarBotao(cat){
+
+document
+.querySelectorAll(".categoria")
+.forEach(btn=>btn.classList.remove("activa"));
+
+document
+.getElementById("btn-" + cat)
+.classList.add("activa");
+
+}
+
+function selecionarCategoria(cat){
+
+categoriaActual = cat;
+
+seleccionarBotao(cat);
+
+}
+
+function desenharArtistas(){
+
+const div =
+document.getElementById("artistas");
+
+div.innerHTML = "";
+
+artistas.forEach(nome=>{
+
+const btn =
+document.createElement("button");
+
+btn.className = "artista";
+btn.textContent = nome;
+
+btn.onclick = ()=>{
+pesquisar(nome);
 };
+
+div.appendChild(btn);
+
+});
+
+}
+
+document
+.getElementById("pesquisa")
+.addEventListener("input",e=>{
+
+const texto =
+e.target.value.toLowerCase();
+
+document
+.querySelectorAll(".artista")
+.forEach(btn=>{
+
+btn.style.display =
+btn.textContent.toLowerCase().includes(texto)
+? "block"
+: "none";
+
+});
+
+});
+
+desenharArtistas();
 
 </script>
 
