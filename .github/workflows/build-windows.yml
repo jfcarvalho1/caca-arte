@@ -1,11 +1,11 @@
-name: Build Caça à Arte Scout Windows
+name: Build Windows Installer
 
 on:
-  workflow_dispatch:
   push:
     paths:
       - 'scout/**'
       - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,30 +15,49 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller certifi truststore rapidfuzz
-      - name: Build Windows application
-        run: |
-          pyinstaller --noconfirm --clean --onedir --name "Caca a Arte Scout" --paths scout --hidden-import scout_engine.database --hidden-import scout_engine.adapters --hidden-import scout_engine.normalization --hidden-import scout_engine.extraction scout/Caca_Arte_Scout.py
-      - name: Add portable instructions
+          pip install -r scout/requirements.txt
+          pip install pyinstaller truststore
+      - name: Run tests
         shell: pwsh
         run: |
-          @"
-          CACA A ARTE SCOUT
-          Windows portable package
-          
-          1. Extract this entire folder to a location you can write to.
-          2. Run Caca a Arte Scout.exe.
-          3. The app opens in your browser at http://127.0.0.1:8766.
-          
-          Keep the entire folder together. The data folder and history are local.
-          "@ | Set-Content "dist/Caca a Arte Scout/LEIA-ME.txt" -Encoding UTF8
-      - name: Package ZIP
-        run: Compress-Archive -Path "dist/Caca a Arte Scout" -DestinationPath "Caça à Arte Scout Windows.zip"
+          if (Test-Path scout/tests) { python -m unittest discover -s scout/tests -v }
+      - name: Build app
+        run: |
+          pyinstaller --noconfirm --clean --onedir --name "CacaArteScout" --paths scout --collect-all rapidfuzz --hidden-import truststore scout/Caca_Arte_Scout.py
+      - name: Create installer
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          $app = Join-Path $PWD "dist/CacaArteScout"
+          @'
+          [Setup]
+          AppName=Caça à Arte Scout
+          AppVersion=0.4.5
+          DefaultDirName={localappdata}\Caça à Arte Scout
+          DefaultGroupName=Caça à Arte Scout
+          OutputDir=installer
+          OutputBaseFilename=Instalar_Caca_Arte_Scout
+          PrivilegesRequired=lowest
+          Compression=lzma
+          SolidCompression=yes
+          WizardStyle=modern
+
+          [Files]
+          Source: "dist\CacaArteScout\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{userdesktop}\Caça à Arte Scout"; Filename: "{app}\CacaArteScout.exe"
+          Name: "{userprograms}\Caça à Arte Scout"; Filename: "{app}\CacaArteScout.exe"
+
+          [Run]
+          Filename: "{app}\CacaArteScout.exe"; Description: "Abrir Caça à Arte Scout"; Flags: postinstall nowait
+          '@ | Set-Content installer.iss -Encoding ASCII
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
       - uses: actions/upload-artifact@v4
         with:
-          name: Caca-Arte-Scout-Windows
-          path: Caça à Arte Scout Windows.zip
+          name: Instalador-Caca-Arte-Scout
+          path: installer/Instalar_Caca_Arte_Scout.exe
           retention-days: 30
