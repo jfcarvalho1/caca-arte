@@ -1,0 +1,638 @@
+{
+ "P55.art": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": null,
+  "adapter": "p55_shopify",
+  "status": "direct_candidate",
+  "validated_on": null
+ },
+ "Galeria São Mamede": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "saomamede.com",
+  "adapter": "saomamede_works_v040",
+  "status": "direct_candidate",
+  "fallback": null,
+  "validated_on": null
+ },
+ "Galeria 111": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "111.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Underdogs Gallery": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "under-dogs.net",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Galerias de Edições Nacionais": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "galeriasdeedicoesnacionais.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Artsy Buy Now": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "artsy.net",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Centro Português de Serigrafia": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "cps.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Art4All": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "art4all.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Culturas Galeria": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "culturas.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Clube Rastro": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "clubedearte.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "MundoMolduras": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "mundomolduras.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Galeria CNAP": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "galeriadearte.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Galeria Sete": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "galeriasete.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "A23 Galeria de Arte": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "a23.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Colectivo Besta": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "colectivobesta.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "TWOART Gallery": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "twoart.net",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "In7Artes": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "in7artes.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Galeria Nicolau Nasoni": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "galerianicolaunasoni.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Obras de Arte": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "obrasdearte.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "ArtMajeur Portugal": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "artmajeur.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Selency": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "selency.fr",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Pamono": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "pamono.eu",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "1stDibs": {
+  "areas": [
+   "Arte"
+  ],
+  "domain": "1stdibs.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Alfarrabista Manuel Ferreira": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": null,
+  "adapter": "bookshop_form_discovery",
+  "status": "direct_candidate",
+  "fallback": null,
+  "validated_on": null
+ },
+ "Livraria Alfarrabista Liliana Queiroz": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": null,
+  "adapter": "bookshop_form_discovery",
+  "status": "direct_candidate",
+  "fallback": null,
+  "validated_on": null
+ },
+ "Livraria Sá da Costa": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": null,
+  "adapter": "bookshop_form_discovery",
+  "status": "direct_candidate",
+  "fallback": null,
+  "validated_on": null
+ },
+ "Homem dos Livros": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "homemdoslivros.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Manuseado": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "manuseado.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Livraria Trindade": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "livrariatrindade.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Paraíso do Livro": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "paraisodolivro.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Livraria Ultramarina": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "livrariaultramarina.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "O Bibliognosta": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "obibliognosta.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Livraria Moreira da Costa": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "livrariamoreiradacosta.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Livraria Castro e Silva": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "castroesilva.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Livraria Miguel de Carvalho": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "livrariamigueldecarvalho.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Alfarrabista Duque": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "alfarrabistaduque.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "IberLibro": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "iberlibro.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "ZVAB": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "zvab.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "AbeBooks": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "abebooks.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Trade Stories": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "tradestories.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Booklooker": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "booklooker.de",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Medimops": {
+  "areas": [
+   "Livros"
+  ],
+  "domain": "medimops.de",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "OLX": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "olx.pt",
+  "adapter": "olx_direct",
+  "status": "direct_candidate",
+  "fallback": "domain_search",
+  "validated_on": null
+ },
+ "CustoJusto": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "custojusto.pt",
+  "adapter": "custojusto_direct",
+  "status": "direct_candidate",
+  "fallback": "domain_search",
+  "validated_on": null
+ },
+ "Wallapop": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "wallapop.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Vinted": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "vinted.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Kleinanzeigen": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "kleinanzeigen.de",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "eBay": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "ebay.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Milanuncios": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "milanuncios.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Leboncoin": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "leboncoin.fr",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Marktplaats": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "marktplaats.nl",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Subito": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "subito.it",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "FINN.no": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "finn.no",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "DBA": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "dba.dk",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Delcampe": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "delcampe.net",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Todocoleccion": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "todocoleccion.net",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "2dehands": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "2dehands.be",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Allegro": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "allegro.pl",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Shpock": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "shpock.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Cash Converters": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "cashconverters.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "CeX Portugal": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "webuy.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Micolet": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "micolet.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Discogs": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "discogs.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Reverb": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "reverb.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Vestiaire Collective": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "vestiairecollective.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Depop": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "depop.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Sellpy": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "sellpy.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Rakuten France": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "fr.shopping.rakuten.com",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "ParuVendu": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "paruvendu.fr",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ },
+ "Back Market": {
+  "areas": [
+   "Usados"
+  ],
+  "domain": "backmarket.pt",
+  "adapter": "domain_search",
+  "status": "not_validated",
+  "validated_on": null
+ }
+}

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+scout/data/*.sqlite3
+scout/data/*.log
+scout/diagnostico/
