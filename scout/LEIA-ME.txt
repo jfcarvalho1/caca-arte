@@ -1,4 +1,4 @@
-CAÇA À ARTE SCOUT 0.4.5
+CAÇA À ARTE SCOUT 0.4.6
 =======================
 
 Base: 0.3.3 REV9 (a última da linha de desenvolvimento). Os ZIP antigos não
@@ -14,6 +14,12 @@ INSTALAR (uma vez)
    - cria o atalho "Caca a Arte Scout" no Ambiente de Trabalho.
 Nota: já não há ficheiros .bat. O Controlo Inteligente de Aplicações do Windows
 bloqueia .bat descarregados da Internet; os ficheiros .py não são bloqueados.
+
+PROGRAMA .EXE (opcional)
+------------------------
+Duplo clique em  CONSTRUIR_EXE.py  cria o CacaArteScout.exe nesta pasta e o atalho
+"Caca a Arte Scout (exe)". O Windows (Controlo Inteligente de Aplicações) pode
+bloquear o .exe por não ter assinatura digital; nesse caso use o atalho normal.
 
 USAR
 ----
