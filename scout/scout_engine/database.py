@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 
 class ResultStore:
     def __init__(self, path=None):
-        self.path = Path(path) if path else Path(__file__).resolve().parent.parent / "data" / "scout_results.sqlite3"
+        import sys as _sys
+        # No .exe (PyInstaller) os dados ficam ao lado do programa, não na pasta temporária.
+        _base = Path(_sys.executable).resolve().parent if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent.parent
+        self.path = Path(path) if path else _base / "data" / "scout_results.sqlite3"
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         with self._connect() as c:

@@ -4,3 +4,5 @@ __pycache__/
 scout/data/*.sqlite3
 scout/data/*.log
 scout/diagnostico/
+_construcao_exe/
+*.exe

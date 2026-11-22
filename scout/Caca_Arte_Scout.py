@@ -37,8 +37,9 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.5"
-APP_DIR = Path(__file__).resolve().parent
+VERSION = "0.4.6"
+import sys
+APP_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
 if not LOG.handlers:
@@ -1063,7 +1064,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.5</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.6</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">
