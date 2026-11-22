@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
 echo ==============================================
-echo  CACA A ARTE SCOUT 0.4.0 - INSTALACAO
+echo  CACA A ARTE SCOUT 0.4.2 - INSTALACAO
 echo ==============================================
 set "PY="
 where py >nul 2>nul && set "PY=py -3"
