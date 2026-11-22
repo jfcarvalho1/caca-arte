@@ -1,4 +1,4 @@
-CAÇA À ARTE SCOUT 0.4.0
+CAÇA À ARTE SCOUT 0.4.5
 =======================
 
 Base: 0.3.3 REV9 (a última da linha de desenvolvimento). Os ZIP antigos não
@@ -6,22 +6,26 @@ são substituídos: esta versão deve ser extraída para uma pasta NOVA.
 
 INSTALAR (uma vez)
 ------------------
-1. Extrair o ZIP para uma pasta, por exemplo  Desktop\Arte\Caca_Arte_Scout_0.4.0
-2. Duplo clique em  INSTALAR.bat
-   - procura o Python (se não houver, tenta instalá-lo com o winget, gratuito);
-   - cria o ambiente local .venv e instala o único requisito (rapidfuzz);
-   - corre os 39 testes offline;
+É preciso ter o Python instalado (gratuito: python.org ou "winget install Python.Python.3.12").
+1. Extrair o ZIP (ou copiar a pasta da pen) para uma pasta, por exemplo o Ambiente de Trabalho.
+2. Duplo clique em  INSTALAR_CACA_ARTE_SCOUT.py
+   - cria o ambiente local .venv e instala os requisitos gratuitos (rapidfuzz, certifi);
+   - corre os testes automáticos;
    - cria o atalho "Caca a Arte Scout" no Ambiente de Trabalho.
+Nota: já não há ficheiros .bat. O Controlo Inteligente de Aplicações do Windows
+bloqueia .bat descarregados da Internet; os ficheiros .py não são bloqueados.
 
 USAR
 ----
-Duplo clique no atalho (ou em INICIAR_CACA_ARTE_SCOUT.bat).
+Duplo clique no atalho (ou em ABRIR_CACA_ARTE_SCOUT.py).
 Abre no navegador em http://127.0.0.1:8766 (porta separada da Minha Biblioteca, 8765).
 
 1. Escolher a área: Arte, Livros ou Usados. Cada área pesquisa só as suas fontes;
    não existe botão que pesquise todas as áreas de uma vez.
 2. Escrever o artista ou termo (vazio = os 13 artistas da lista, demora mais).
 3. Escolher tipo de artigo e, se quiser, uma fonte individual.
+   Os resultados podem ser ordenados por preço (crescente/decrescente), data
+   (mais recente/mais antiga), fonte ou título, na lista "Ordenar por".
 4. "Pesquisar nesta área". Os resultados aparecem à medida que chegam.
 5. Cada cartão tem preço, imagem (quando a fonte a publica), fonte, método de
    recolha, data e o link "Abrir anúncio na fonte".
@@ -34,7 +38,7 @@ Outros botões:
 
 TESTAR AS FONTES (importante)
 -----------------------------
-Duplo clique em  TESTAR_FONTES.bat
+Duplo clique em  TESTAR_FONTES.py
 - faz uma pesquisa REAL em cada uma das fontes das três áreas;
 - demora cerca de 5 a 10 minutos;
 - no fim abre a pasta "diagnostico" com um ficheiro  ENVIAR_diagnostico_....zip
@@ -45,7 +49,7 @@ FICHEIROS
 ---------
 data\scout_results.sqlite3   histórico de resultados (não apagar)
 data\scout.log               registo técnico dos pedidos e erros (sem credenciais)
-diagnostico\                 relatórios do TESTAR_FONTES.bat
+diagnostico\                 relatórios do TESTAR_FONTES.py
 
 LIMITES (honestos)
 ------------------

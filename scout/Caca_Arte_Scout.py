@@ -37,7 +37,7 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.4"
+VERSION = "0.4.5"
 APP_DIR = Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
@@ -1008,6 +1008,11 @@ def run_task(task_id, artist, category, limit, selected_source):
         if _RESULT_STORE is not None:
             try:
                 saved = _RESULT_STORE.save_results(results, query_artist=artist, area=AREA_LABEL.get(selected_source, selected_source))
+                seen = _RESULT_STORE.first_seen_map([r.get("url", "") for r in results])
+                for r in results:
+                    fs = seen.get((r.get("url") or "").split("#", 1)[0].rstrip("/"))
+                    if fs:
+                        r["first_seen"] = fs
             except Exception as db_exc:
                 errors.append("Base de dados local: " + type(db_exc).__name__ + ": " + str(db_exc))
         LOG.info("Pesquisa concluída: %d resultados, %d falhas, %d guardados", len(results), len(errors), saved)
@@ -1053,12 +1058,12 @@ button.search:disabled{opacity:.5;cursor:wait}.hint,.meta{font-size:12px;color:v
 .pager button,.new-search{padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:#293341;color:var(--ink);cursor:pointer}
 .pager button:disabled{opacity:.35;cursor:not-allowed}.pager .page-info{color:var(--muted);font-size:13px}
 button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(--ink);border:1px solid #536071;border-radius:8px;font-weight:700;cursor:pointer}
-.actions{display:flex;gap:10px;align-items:end;flex-wrap:wrap}a.linkbtn{display:inline-block;text-decoration:none;font-size:14px}.noimg{height:120px;display:grid;place-items:center;background:#1b222b;color:var(--muted);font-size:12px}.warn{background:#3b3524;color:#f1e1b5;border-color:#6d6140}.small{font-size:11px;color:#8d96a1}
+.actions{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.sortbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 8px}.sortbar #count{margin:0}.sortlbl{display:flex;align-items:center;gap:8px;margin:0;font-weight:600}.sortlbl select{width:auto;padding:8px 10px}a.linkbtn{display:inline-block;text-decoration:none;font-size:14px}.noimg{height:120px;display:grid;place-items:center;background:#1b222b;color:var(--muted);font-size:12px}.warn{background:#3b3524;color:#f1e1b5;border-color:#6d6140}.small{font-size:11px;color:#8d96a1}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}.card img{width:100%;height:225px;object-fit:contain;background:#1b222b}.inside{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}.inside h3{margin:0;font-size:16px}.price{font-size:22px;font-weight:bold;color:var(--gold)}.inside a{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);color:#e0c18b;text-decoration:none;font-weight:bold}
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.4</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.5</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">
@@ -1077,7 +1082,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 <div class="actions" style="margin-top:4px"><button class="secondary" type="button" onclick="showHistory()">Histórico guardado</button><a class="secondary linkbtn" href="/api/export?format=csv">Exportar CSV</a><a class="secondary linkbtn" href="/api/export?format=json">Exportar JSON</a></div>
 <p class="hint" id="areaHint">A pesquisa consulta apenas fontes de arte. Para pesquisar livros ou usados, selecciona outra área.</p>
 </section>
-<strong id="count">Ainda sem pesquisa</strong><div id="status"></div><nav id="pagerTop" class="pager" aria-label="Paginação (topo)"></nav><section class="cards" id="results"></section><nav id="pager" class="pager" aria-label="Paginação dos resultados"></nav>
+<div class="sortbar"><strong id="count">Ainda sem pesquisa</strong><label for="sortBy" class="sortlbl">Ordenar por <select id="sortBy" onchange="applySort()"><option value="price_asc">Preço: mais barato primeiro</option><option value="price_desc">Preço: mais caro primeiro</option><option value="date_desc">Data: mais recente primeiro</option><option value="date_asc">Data: mais antigo primeiro</option><option value="source">Fonte (A-Z)</option><option value="title">Título (A-Z)</option></select></label></div><div id="status"></div><nav id="pagerTop" class="pager" aria-label="Paginação (topo)"></nav><section class="cards" id="results"></section><nav id="pager" class="pager" aria-label="Paginação dos resultados"></nav>
 </main>
 <script>
 const SOURCE_GROUPS=SOURCE_GROUPS_JSON;
@@ -1108,13 +1113,28 @@ let allRows=[];
 let currentPage=1;
 const PAGE_SIZE=50;
 let activeTask=null;
+function rowDate(x){return String(x.published||x.first_seen||x.collected_at||'')}
+function sortRows(rows){
+ const mode=(document.getElementById('sortBy')||{}).value||'price_asc';
+ const r=rows.slice();
+ const p=x=>(x.price===null||x.price===undefined)?null:Number(x.price);
+ const cmpPrice=(a,b,dir)=>{const A=p(a),B=p(b);if(A===null&&B===null)return 0;if(A===null)return 1;if(B===null)return -1;return dir*(A-B)};
+ if(mode==='price_asc')r.sort((a,b)=>cmpPrice(a,b,1));
+ else if(mode==='price_desc')r.sort((a,b)=>cmpPrice(a,b,-1));
+ else if(mode==='date_desc')r.sort((a,b)=>rowDate(b).localeCompare(rowDate(a)));
+ else if(mode==='date_asc')r.sort((a,b)=>{const A=rowDate(a),B=rowDate(b);if(!A)return 1;if(!B)return -1;return A.localeCompare(B)});
+ else if(mode==='source')r.sort((a,b)=>String(a.source||'').localeCompare(String(b.source||''),'pt'));
+ else if(mode==='title')r.sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''),'pt'));
+ return r;
+}
+function applySort(){showPage(1,false)}
 function showPage(requestedPage,scroll){
  const totalPages=Math.max(1,Math.ceil(allRows.length/PAGE_SIZE));
  const parsed=Number.parseInt(requestedPage,10);
  if(!Number.isFinite(parsed)) return;
  currentPage=Math.max(1,Math.min(parsed,totalPages));
  const first=(currentPage-1)*PAGE_SIZE;
- document.getElementById('results').innerHTML=renderCards(allRows.slice(first,first+PAGE_SIZE));
+ document.getElementById('results').innerHTML=renderCards(sortRows(allRows).slice(first,first+PAGE_SIZE));
  const pager=document.getElementById('pager');
  if(totalPages<=1){pager.innerHTML='';const t=document.getElementById('pagerTop');if(t)t.innerHTML='';return;}
  pager.innerHTML='<button type="button" data-page="1" onclick="showPage(1)" '+(currentPage===1?'disabled':'')+'>Primeira</button>'+
@@ -1182,7 +1202,7 @@ async function runSearch(){
  }catch(e){document.getElementById('status').innerHTML='<div class="status error">Erro: '+esc(e.message)+'</div>'}
  finally{if(activeTask===null){b.disabled=false;b.textContent='Pesquisar nesta área'}}
 }
-function renderCards(rows){return rows.map(x=>'<article class=card>'+(x.image?'<img loading=lazy referrerpolicy=no-referrer src="'+esc(x.image)+'">':'<div class=noimg>Imagem não disponível na fonte</div>')+'<div class=inside><h3>'+esc(x.title)+'</h3><div class=price>'+esc(x.price_text)+'</div><div class=meta>'+esc(x.artist)+' · '+esc(x.source)+'</div><div class=meta>'+esc(x.availability)+'<br>'+esc(x.shipping)+'</div><div class=meta>'+esc(x.description)+'</div><div class=small>'+esc(x.method||'')+(x.collected_at||x.first_seen?' · recolhido '+esc((x.collected_at||x.first_seen||'').slice(0,10)):'')+(x.published?' · publicado '+esc(String(x.published).slice(0,10)):'')+'</div><a target=_blank rel=noopener href="'+esc(x.url)+'">Abrir anúncio na fonte ↗</a></div></article>').join('')}
+function renderCards(rows){return rows.map(x=>'<article class=card>'+(x.image?'<img loading=lazy referrerpolicy=no-referrer src="'+esc(x.image)+'">':'<div class=noimg>Imagem não disponível na fonte</div>')+'<div class=inside><h3>'+esc(x.title)+'</h3><div class=price>'+esc(x.price_text)+'</div><div class=meta>'+esc(x.artist)+' · '+esc(x.source)+'</div><div class=meta>'+esc(x.availability)+'<br>'+esc(x.shipping)+'</div><div class=meta>'+esc(x.description)+'</div><div class=small>'+esc(x.method||'')+(x.first_seen||x.collected_at?' · visto desde '+esc((x.first_seen||x.collected_at||'').slice(0,10)):'')+(x.published?' · publicado '+esc(String(x.published).slice(0,10)):'')+'</div><a target=_blank rel=noopener href="'+esc(x.url)+'">Abrir anúncio na fonte ↗</a></div></article>').join('')}
 async function showHistory(){
  const term=document.getElementById('artist').value.trim();
  document.getElementById('status').innerHTML='<div class=status>A ler o histórico local…</div>';

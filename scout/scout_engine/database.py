@@ -80,5 +80,17 @@ class ResultStore:
                              (limit,)).fetchall()
         return self._rows(rows)
 
+    def first_seen_map(self, urls):
+        """URL canónico -> data em que o anúncio foi visto pela primeira vez."""
+        keys = [(u or "").split("#", 1)[0].rstrip("/") for u in urls]
+        out = {}
+        with self._connect() as c:
+            for i in range(0, len(keys), 500):
+                chunk = keys[i:i + 500]
+                q = "SELECT canonical_url, first_seen FROM results WHERE canonical_url IN (%s)" % ",".join("?" * len(chunk))
+                for r in c.execute(q, chunk).fetchall():
+                    out[r["canonical_url"]] = r["first_seen"]
+        return out
+
     def count(self):
         with self._connect() as c: return c.execute("SELECT COUNT(*) FROM results").fetchone()[0]
