@@ -1,0 +1,60 @@
+CAÇA À ARTE SCOUT 0.4.0
+=======================
+
+Base: 0.3.3 REV9 (a última da linha de desenvolvimento). Os ZIP antigos não
+são substituídos: esta versão deve ser extraída para uma pasta NOVA.
+
+INSTALAR (uma vez)
+------------------
+1. Extrair o ZIP para uma pasta, por exemplo  Desktop\Arte\Caca_Arte_Scout_0.4.0
+2. Duplo clique em  INSTALAR.bat
+   - procura o Python (se não houver, tenta instalá-lo com o winget, gratuito);
+   - cria o ambiente local .venv e instala o único requisito (rapidfuzz);
+   - corre os 39 testes offline;
+   - cria o atalho "Caca a Arte Scout" no Ambiente de Trabalho.
+
+USAR
+----
+Duplo clique no atalho (ou em INICIAR_CACA_ARTE_SCOUT.bat).
+Abre no navegador em http://127.0.0.1:8766 (porta separada da Minha Biblioteca, 8765).
+
+1. Escolher a área: Arte, Livros ou Usados. Cada área pesquisa só as suas fontes;
+   não existe botão que pesquise todas as áreas de uma vez.
+2. Escrever o artista ou termo (vazio = os 13 artistas da lista, demora mais).
+3. Escolher tipo de artigo e, se quiser, uma fonte individual.
+4. "Pesquisar nesta área". Os resultados aparecem à medida que chegam.
+5. Cada cartão tem preço, imagem (quando a fonte a publica), fonte, método de
+   recolha, data e o link "Abrir anúncio na fonte".
+
+Outros botões:
+- "Histórico guardado": mostra o que ficou guardado de pesquisas anteriores
+  (filtra pelo texto escrito no campo do artista).
+- "Exportar CSV" / "Exportar JSON": descarrega todo o histórico (CSV abre no Excel).
+- "Nova pesquisa": limpa o ecrã e interrompe a pesquisa em curso.
+
+TESTAR AS FONTES (importante)
+-----------------------------
+Duplo clique em  TESTAR_FONTES.bat
+- faz uma pesquisa REAL em cada uma das fontes das três áreas;
+- demora cerca de 5 a 10 minutos;
+- no fim abre a pasta "diagnostico" com um ficheiro  ENVIAR_diagnostico_....zip
+Esse ZIP tem o relatório (o que funciona, o que falha e porquê) e amostras das
+páginas recebidas. É com ele que se corrigem os motores que falharem.
+
+FICHEIROS
+---------
+data\scout_results.sqlite3   histórico de resultados (não apagar)
+data\scout.log               registo técnico dos pedidos e erros (sem credenciais)
+diagnostico\                 relatórios do TESTAR_FONTES.bat
+
+LIMITES (honestos)
+------------------
+- Fontes com motor directo: P55.art, Galeria São Mamede, OLX, CustoJusto e três
+  alfarrabistas (Manuel Ferreira, Liliana Queiroz, Sá da Costa).
+- As restantes fontes são pesquisadas por Bing/DuckDuckGo/Brave limitados ao
+  domínio do site: dão candidatos, podem falhar por limites dos motores (HTTP 429)
+  e não trazem imagem.
+- AbeBooks/IberLibro/ZVAB proíbem recolha automática (robots.txt). Ficam pelo
+  motor de pesquisa; para uso intenso seria preciso a API oficial de afiliado.
+- Não se contornam logins, CAPTCHA nem bloqueios.
+- Nada nesta versão foi declarado "a funcionar" sem o teste real no seu PC.

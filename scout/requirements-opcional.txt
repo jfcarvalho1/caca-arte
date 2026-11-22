@@ -1,0 +1,5 @@
+# Módulos auxiliares NÃO usados pela pesquisa principal (scout_engine/browser.py,
+# scrapy_runner.py, extraction.py). Só instalar se forem precisos no futuro.
+scrapy==2.20.0
+playwright==1.65.0
+trafilatura==2.3.1
