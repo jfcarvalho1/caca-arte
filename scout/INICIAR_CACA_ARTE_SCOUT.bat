@@ -17,6 +17,8 @@ if not defined PYTHON_EXE (
   pause
   exit /b 1
 )
+rem Fecha versoes antigas da Scout que tenham ficado abertas na porta 8766
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr /r /c:":8766 .*LISTENING"') do taskkill /PID %%a /F >nul 2>nul
 echo A iniciar Caca a Arte Scout em http://127.0.0.1:8766 ...
 %PYTHON_EXE% "%~dp0Caca_Arte_Scout.py"
 if errorlevel 1 pause

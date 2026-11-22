@@ -37,7 +37,7 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 APP_DIR = Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
@@ -74,6 +74,16 @@ def _build_ssl_contexts():
             contexts.append(("certifi", ssl.create_default_context(cafile=cafile)))
         except Exception:
             pass
+    # Verificador do próprio Windows (como os navegadores): pacote truststore,
+    # incluído no pip. Resolve cadeias antigas que o OpenSSL rejeita.
+    try:
+        try:
+            import truststore
+        except Exception:
+            from pip._vendor import truststore
+        contexts.append(("windows", truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)))
+    except Exception:
+        pass
     contexts.append(("sistema", ssl.create_default_context()))
     return contexts
 
@@ -1026,7 +1036,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.1</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.2</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">
@@ -1207,6 +1217,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": str(exc)}, 400)
             body = json.dumps({"results": results, "errors": errors}, ensure_ascii=False).encode()
             self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if u.path == "/api/version":
+            return self._json({"version": VERSION, "ssl": [n for n, _ in _SSL_CONTEXTS]})
+        if u.path == "/api/shutdown":
+            self._json({"ok": True})
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
         if u.path == "/api/cancel":
             task_id = parse_qs(u.query).get("id", [""])[0]
             with TASK_LOCK:
@@ -1258,7 +1274,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers(); self.wfile.write(body)
 
 def main():
-    server = ThreadingHTTPServer(("127.0.0.1", 8766), Handler)
+    # Se já houver uma Scout aberta (por exemplo uma versão antiga esquecida
+    # noutra janela), pede-lhe para fechar antes de arrancar esta.
+    try:
+        with urlopen("http://127.0.0.1:8766/api/shutdown", timeout=2):
+            pass
+        time.sleep(1.5)
+    except Exception:
+        pass
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", 8766), Handler)
+    except OSError:
+        print("ERRO: a porta 8766 continua ocupada por outra janela da Caça à Arte Scout.")
+        print("Feche as outras janelas pretas da Scout e abra de novo.")
+        raise
+    print("Caça à Arte Scout", VERSION, "- certificados:", ", ".join(n for n, _ in _SSL_CONTEXTS))
     print("Caça à Arte Scout: http://127.0.0.1:8766")
     def open_browser():
         import os, shutil
