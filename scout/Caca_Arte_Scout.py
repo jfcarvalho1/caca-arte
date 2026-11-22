@@ -37,7 +37,7 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 APP_DIR = Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
@@ -622,13 +622,23 @@ SOURCE_DOMAINS = {
 
 # Organização funcional das fontes: arte, livros e classificados úteis para ambos.
 ART_SOURCES = [
-    "P55.art", "Galeria São Mamede", "Galeria 111", "Underdogs Gallery",
-    "Galerias de Edições Nacionais", "Artsy Buy Now", "Centro Português de Serigrafia",
-    "Art4All", "Culturas Galeria", "Clube Rastro", "MundoMolduras",
-    "Galeria CNAP", "Galeria Sete", "A23 Galeria de Arte", "Colectivo Besta",
-    "TWOART Gallery", "In7Artes", "Galeria Nicolau Nasoni", "Obras de Arte",
-    "ArtMajeur Portugal", "Selency", "Pamono", "1stDibs",
+    "P55.art", "Galeria São Mamede", "Underdogs Gallery", "Centro Português de Serigrafia",
+    "Art4All", "Culturas Galeria", "TWOART Gallery", "Galeria 111", "In7Artes",
+    "Artsy Buy Now", "Obras de Arte", "ArtMajeur Portugal", "Selency", "Pamono", "1stDibs",
 ]
+# Fontes retiradas das pesquisas em 22-11-2026: o endereço registado não abriu
+# no navegador do utilizador. Ficam aqui para não se perder a informação;
+# voltam à lista quando o endereço correcto for confirmado.
+DISABLED_SOURCES = {
+    "Galerias de Edições Nacionais": "galeriasdeedicoesnacionais.pt não abre",
+    "Clube Rastro": "clubedearte.pt não abre",
+    "MundoMolduras": "mundomolduras.com não abre",
+    "Galeria CNAP": "galeriadearte.pt não abre",
+    "Galeria Sete": "galeriasete.com não abre",
+    "A23 Galeria de Arte": "a23.pt não abre",
+    "Colectivo Besta": "colectivobesta.com não abre",
+    "Galeria Nicolau Nasoni": "galerianicolaunasoni.pt não abre",
+}
 BOOK_SOURCES = [
     "Alfarrabista Manuel Ferreira", "Livraria Alfarrabista Liliana Queiroz",
     "Livraria Sá da Costa", "Homem dos Livros", "Manuseado", "Livraria Trindade",
@@ -848,6 +858,16 @@ def search_external(artist, category, source, limit):
     # apenas que não encontrou correspondências, não que a fonte esteja avariada.
     return results[:limit]
 
+DIRECT_ART = {
+    "Underdogs Gallery": lambda a, c, l: adapters.search_shopify_store(a, c, l, get, PATTERNS, "https://www.under-dogs.net", "Underdogs Gallery"),
+    "TWOART Gallery": lambda a, c, l: adapters.search_woocommerce_store(a, c, l, get, PATTERNS, "https://twoart.net", "TWOART Gallery"),
+    "Centro Português de Serigrafia": lambda a, c, l: adapters.search_cps(a, c, l, get, PATTERNS),
+    "Art4All": lambda a, c, l: adapters.search_art4all(a, c, l, get, PATTERNS),
+    "Culturas Galeria": lambda a, c, l: adapters.search_culturas(a, c, l, get, PATTERNS),
+    "Galeria 111": lambda a, c, l: adapters.search_wordpress_pages(a, c, l, get, PATTERNS, "https://111.pt", "Galeria 111"),
+    "In7Artes": lambda a, c, l: adapters.search_wordpress_pages(a, c, l, get, PATTERNS, "https://in7artes.com", "In7Artes"),
+}
+
 DIRECT_USED = {
     "OLX": lambda a, c, l: adapters.search_olx(a, c, l, get, PATTERNS),
     "CustoJusto": lambda a, c, l: adapters.search_custojusto(a, c, l, get, PATTERNS),
@@ -862,7 +882,7 @@ def source_method(source):
         return "directo (página do artista)"
     if source in BOOKSHOP_SOURCES:
         return "directo (pesquisa da livraria)"
-    if source in DIRECT_USED:
+    if source in DIRECT_USED or source in DIRECT_ART:
         return "directo (pesquisa pública do site)"
     return "motor de pesquisa (Bing/DuckDuckGo/Brave, site:" + SOURCE_DOMAINS.get(source, "?") + ")"
 
@@ -877,6 +897,8 @@ def search_one(source, name, category, limit, warnings=None):
         return search_sao_mamede(name, category, limit)
     if source in BOOKSHOP_SOURCES:
         return search_bookshop(name, category, source, limit)
+    if source in DIRECT_ART:
+        return DIRECT_ART[source](name, category, limit)
     if source in DIRECT_USED:
         try:
             return DIRECT_USED[source](name, category, limit)
@@ -1036,7 +1058,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.3</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.4</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">

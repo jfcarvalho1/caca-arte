@@ -614,3 +614,193 @@ def search_bookshop_auto(artist, category, source, base, fetch, card_parser, pat
         results.append(item)
     results.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
     return results[:limit]
+
+
+# --------------------------------------------------------------------------
+# Galerias de arte com motor directo (0.4.4) - estrutura verificada nos sites
+# reais em 22-11-2026 a partir do navegador do utilizador.
+# --------------------------------------------------------------------------
+
+def _get_json(fetch, url, timeout=15):
+    return json.loads(fetch(url, timeout).decode("utf-8", "replace"))
+
+
+def search_shopify_store(artist, category, limit, fetch, patterns, base, source):
+    """Loja Shopify genérica (Underdogs, ...): colecção do artista e/ou pesquisa da loja."""
+    base = base.rstrip("/")
+    products, errors, ok = {}, [], 0
+    for page in range(1, 5):
+        try:
+            data = _get_json(fetch, f"{base}/collections/{slugify(artist)}/products.json?limit=250&page={page}")
+            ok += 1
+        except Exception as exc:
+            errors.append(str(exc)); break
+        rows = data.get("products") or []
+        for p in rows:
+            products[p.get("handle")] = p
+        if len(rows) < 250:
+            break
+    if not products:
+        try:
+            data = _get_json(fetch, f"{base}/search/suggest.json?q={quote(artist)}&resources[type]=product&resources[limit]=10")
+            ok += 1
+            for p in data.get("resources", {}).get("results", {}).get("products", []):
+                products[p.get("handle") or p.get("url")] = p
+        except Exception as exc:
+            errors.append(str(exc))
+    if ok == 0:
+        raise RuntimeError(f"{source} inacessível: " + "; ".join(errors[:2]))
+    out = []
+    for p in products.values():
+        text = " ".join(str(p.get(k, "")) for k in ("title", "body_html", "body", "vendor", "product_type"))
+        if not artist_in(artist, text):
+            continue
+        if "variants" in p:
+            variants = [v for v in p.get("variants") or [] if v.get("available")]
+            if not variants:
+                continue
+            price = min((float(v["price"]) for v in variants if v.get("price")), default=None)
+            imgs = p.get("images") or []
+            image = imgs[0].get("src", "") if imgs and isinstance(imgs[0], dict) else ""
+            url = f"{base}/products/{p.get('handle')}"
+        else:
+            if p.get("available") is False:
+                continue
+            price = parse_price(str(p.get("price", "")) + " €")
+            im = p.get("featured_image") or p.get("image") or ""
+            image = im.get("url", "") if isinstance(im, dict) else str(im)
+            url = urljoin(base + "/", (p.get("url") or "").split("?")[0])
+        if image.startswith("//"):
+            image = "https:" + image
+        if not category_ok(category, text, patterns):
+            continue
+        out.append(make_item(artist, source, p.get("title", ""), url, price, image, clean_text(p.get("body_html") or p.get("body") or ""),
+                             availability="Disponível na loja online"))
+    out.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+    return out[:limit]
+
+
+def search_woocommerce_store(artist, category, limit, fetch, patterns, base, source):
+    """Loja WooCommerce com Store API pública (TwoArt, ...)."""
+    base = base.rstrip("/")
+    data = _get_json(fetch, f"{base}/wp-json/wc/store/v1/products?search={quote(artist)}&per_page=100")
+    out = []
+    for p in data if isinstance(data, list) else []:
+        text = clean_text(p.get("name", "") + " " + p.get("description", "") + " " + p.get("short_description", ""))
+        if not artist_in(artist, text) or p.get("is_in_stock") is False:
+            continue
+        pr = p.get("prices") or {}
+        price = None
+        try:
+            price = int(pr.get("price")) / (10 ** int(pr.get("currency_minor_unit", 2)))
+        except (TypeError, ValueError):
+            pass
+        imgs = p.get("images") or []
+        if not category_ok(category, text, patterns):
+            continue
+        out.append(make_item(artist, source, clean_text(p.get("name", "")), p.get("permalink", ""), price,
+                             imgs[0].get("src", "") if imgs else "", text, availability="Em stock na loja online"))
+    out.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+    return out[:limit]
+
+
+def search_cps(artist, category, limit, fetch, patterns, max_pages=5):
+    """Centro Português de Serigrafia: /pt/search/?q=<artista>."""
+    base = "https://www.cps.pt"
+    out, seen = [], set()
+    for page in range(1, max_pages + 1):
+        url = f"{base}/pt/search/?q={quote(artist)}" + (f"&page={page}" if page > 1 else "")
+        raw = fetch(url, 18).decode("utf-8", "replace")
+        new = 0
+        for m in re.finditer(r'<a href="(/pt/loja/[^"?#]+)">(.*?)</a>', raw, re.S):
+            href, inner = m.group(1), m.group(2)
+            if "ws-item-title" not in inner or href in seen:
+                continue
+            seen.add(href); new += 1
+            title = clean_text((re.search(r'ws-item-category">(.*?)</div>', inner, re.S) or [None, ""])[1])
+            who = clean_text((re.search(r'ws-item-title">(.*?)</h3>', inner, re.S) or [None, ""])[1])
+            if not artist_in(artist, who + " " + title) or re.search(r"esgotad", clean_text(inner), re.I):
+                continue
+            pm = re.search(r'price-customer">(.*?)</span>', inner, re.S)
+            img = re.search(r'<img src="([^"]+)"', inner)
+            if not category_ok(category, title + " serigrafia", patterns):
+                continue
+            out.append(make_item(artist, "Centro Português de Serigrafia", title, base + href,
+                                 parse_price(clean_text(pm.group(1)) if pm else ""),
+                                 base + img.group(1) if img else "", f"{who}. Preço para sócios pode ser inferior.",
+                                 availability="Disponível na loja do CPS"))
+        if new == 0 or f"page={page + 1}" not in raw:
+            break
+    return out[:limit]
+
+
+def search_art4all(artist, category, limit, fetch, patterns):
+    """Art4All (OpenCart): index.php?route=product/search."""
+    base = "https://www.art4all.pt"
+    raw = fetch(f"{base}/index.php?route=product/search&search={quote(artist)}&limit=100", 18).decode("utf-8", "replace")
+    out, seen = [], set()
+    for block in raw.split('class="product-block-inner"')[1:]:
+        m = re.search(r'href="([^"]*route=product/product[^"]*product_id=(\d+)[^"]*)"', block)
+        if not m or m.group(2) in seen:
+            continue
+        seen.add(m.group(2))
+        name = re.search(r'title="([^"]+)"', block)
+        title = html.unescape(name.group(1)) if name else ""
+        if not artist_in(artist, title) or re.search(r"esgotad|indispon", clean_text(block[:4000]), re.I):
+            continue
+        pm = re.search(r'class="price[^"]*">(.*?)</', block, re.S)
+        img = re.search(r'<img src="([^"]+)"', block)
+        if not category_ok(category, title + " serigrafia", patterns):
+            continue
+        url = f"{base}/index.php?route=product/product&product_id={m.group(2)}"
+        out.append(make_item(artist, "Art4All", title, url, parse_price(clean_text(pm.group(1)) if pm else ""),
+                             img.group(1) if img else "", "", availability="Disponível na loja Art4All", listing_id=m.group(2)))
+    out.sort(key=lambda x: (x["price"] is None, x["price"] or 0))
+    return out[:limit]
+
+
+def search_culturas(artist, category, limit, fetch, patterns):
+    """Culturas Galeria de Arte: /artistas -> artistas-<id>-<Nome> -> grelha de obras."""
+    base = "https://www.culturas.pt/"
+    raw = fetch(base + "artistas", 18).decode("utf-8", "replace")
+    page = None
+    for href in re.findall(r"href=['\"](artistas-\d+-[^'\"]+)['\"]", raw):
+        if fold(html.unescape(href.split("-", 2)[2])) == fold(artist):
+            page = href
+            break
+    if not page:
+        return []  # artista não representado pela galeria
+    raw = fetch(base + quote(html.unescape(page)), 18).decode("utf-8", "replace")
+    out = []
+    for block in raw.split("class='grelha-items'")[1:]:
+        m = re.search(r"href='(detalhes-(\d+)-[^']*)'", block)
+        if not m:
+            continue
+        title = clean_text((re.search(r"<h3 class='sub1'>(.*?)</h3>", block, re.S) or [None, ""])[1])
+        tecnica = clean_text((re.search(r"<span class='texto'>(.*?)</span><br", block, re.S) or [None, ""])[1])
+        pm = re.search(r"parte2_1_1'><span class='texto'>(.*?)</span>", block, re.S)
+        img = re.search(r"<img src='(obras/[^']+)'", block)
+        price_txt = clean_text(pm.group(1)) if pm else ""
+        if re.search(r"vendid|reservad", price_txt + block[:3000], re.I):
+            continue
+        if not category_ok(category, title + " " + tecnica, patterns):
+            continue
+        out.append(make_item(artist, "Culturas Galeria", title, base + quote(html.unescape(m.group(1))),
+                             parse_price(price_txt), base + img.group(1) if img else "", tecnica,
+                             availability="Disponível na galeria", listing_id=m.group(2)))
+    return out[:limit]
+
+
+def search_wordpress_pages(artist, category, limit, fetch, patterns, base, source):
+    """Galerias sem loja online (Galeria 111, In7Artes): páginas que mencionam o artista."""
+    base = base.rstrip("/")
+    data = _get_json(fetch, f"{base}/wp-json/wp/v2/search?search={quote(artist)}&per_page=20")
+    out = []
+    for p in data if isinstance(data, list) else []:
+        title = clean_text(p.get("title", ""))
+        if not artist_in(artist, title):
+            continue
+        out.append(make_item(artist, source, title, p.get("url", ""), None, "",
+                             "Página da galeria (sem preço publicado; pedir informação)",
+                             availability="Sem venda online: contactar a galeria"))
+    return out[:limit]
