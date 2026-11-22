@@ -37,7 +37,7 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 APP_DIR = Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
@@ -1036,7 +1036,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.2</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.3</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">
@@ -1055,7 +1055,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 <div class="actions" style="margin-top:4px"><button class="secondary" type="button" onclick="showHistory()">Histórico guardado</button><a class="secondary linkbtn" href="/api/export?format=csv">Exportar CSV</a><a class="secondary linkbtn" href="/api/export?format=json">Exportar JSON</a></div>
 <p class="hint" id="areaHint">A pesquisa consulta apenas fontes de arte. Para pesquisar livros ou usados, selecciona outra área.</p>
 </section>
-<strong id="count">Ainda sem pesquisa</strong><div id="status"></div><section class="cards" id="results"></section><nav id="pager" class="pager" aria-label="Paginação dos resultados"></nav>
+<strong id="count">Ainda sem pesquisa</strong><div id="status"></div><nav id="pagerTop" class="pager" aria-label="Paginação (topo)"></nav><section class="cards" id="results"></section><nav id="pager" class="pager" aria-label="Paginação dos resultados"></nav>
 </main>
 <script>
 const SOURCE_GROUPS=SOURCE_GROUPS_JSON;
@@ -1079,14 +1079,14 @@ function chooseArea(area){
  const names=SOURCE_GROUPS[area]||[];
  fillSelect(document.getElementById('source'),[["Todas as fontes desta área",area],...names.map(n=>[n,n])]);
  document.getElementById('count').textContent='Área seleccionada: '+(area==='Fontes de arte'?'Arte':area==='Fontes de livros'?'Livros':'Usados');
- document.getElementById('status').innerHTML='';document.getElementById('results').innerHTML='';document.getElementById('pager').innerHTML='';allRows=[];currentPage=1;
+ document.getElementById('status').innerHTML='';document.getElementById('results').innerHTML='';document.getElementById('pager').innerHTML='';document.getElementById('pagerTop').innerHTML='';allRows=[];currentPage=1;
 }
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 let allRows=[];
 let currentPage=1;
 const PAGE_SIZE=50;
 let activeTask=null;
-function showPage(requestedPage){
+function showPage(requestedPage,scroll){
  const totalPages=Math.max(1,Math.ceil(allRows.length/PAGE_SIZE));
  const parsed=Number.parseInt(requestedPage,10);
  if(!Number.isFinite(parsed)) return;
@@ -1094,19 +1094,21 @@ function showPage(requestedPage){
  const first=(currentPage-1)*PAGE_SIZE;
  document.getElementById('results').innerHTML=renderCards(allRows.slice(first,first+PAGE_SIZE));
  const pager=document.getElementById('pager');
- if(totalPages<=1){pager.innerHTML='';return;}
+ if(totalPages<=1){pager.innerHTML='';const t=document.getElementById('pagerTop');if(t)t.innerHTML='';return;}
  pager.innerHTML='<button type="button" data-page="1" onclick="showPage(1)" '+(currentPage===1?'disabled':'')+'>Primeira</button>'+
  '<button type="button" data-page="'+(currentPage-1)+'" onclick="showPage('+(currentPage-1)+')" '+(currentPage===1?'disabled':'')+'>Anterior</button>'+
  '<span class="page-info">Página '+currentPage+' de '+totalPages+' · '+allRows.length+' resultados</span>'+
  '<button type="button" data-page="'+(currentPage+1)+'" onclick="showPage('+(currentPage+1)+')" '+(currentPage===totalPages?'disabled':'')+'>Seguinte</button>'+
  '<button type="button" data-page="'+totalPages+'" onclick="showPage('+totalPages+')" '+(currentPage===totalPages?'disabled':'')+'>Última</button>';
  pager.setAttribute('aria-live','polite');
+ const top=document.getElementById('pagerTop');if(top)top.innerHTML=pager.innerHTML;
+ if(scroll!==false){document.getElementById('count').scrollIntoView({behavior:'smooth',block:'start'});}
 }
 function newSearch(){
  if(activeTask){fetch('/api/cancel?id='+encodeURIComponent(activeTask));activeTask=null;}
  allRows=[];currentPage=1;
  document.getElementById('results').innerHTML='';
- document.getElementById('pager').innerHTML='';
+ document.getElementById('pager').innerHTML='';document.getElementById('pagerTop').innerHTML='';
  document.getElementById('status').innerHTML='';
  document.getElementById('count').textContent='Pronto para nova pesquisa';
  document.getElementById('go').disabled=false;
@@ -1118,7 +1120,7 @@ async function runSearch(){
  if(b.disabled)return;
  activeTask=null;allRows=[];currentPage=1;
  document.getElementById('results').innerHTML='';
- document.getElementById('pager').innerHTML='';
+ document.getElementById('pager').innerHTML='';document.getElementById('pagerTop').innerHTML='';
  b.disabled=true;b.textContent='A pesquisar…';
  document.getElementById('count').textContent='Pesquisa em curso';
  document.getElementById('status').innerHTML='<div class=status>A iniciar pesquisa apenas na área seleccionada.</div>';
@@ -1131,7 +1133,7 @@ async function runSearch(){
   let q=await fetch('/api/status?id='+encodeURIComponent(task),{cache:'no-store'});let st=await q.json();
   if(activeTask!==task)break;
   document.getElementById('status').innerHTML='<div class=status>'+esc(st.message||'A pesquisar')+' · '+(st.progress||0)+'/'+(st.total||'?')+' consultas</div>';
-  if(st.partial_results){allRows=st.partial_results;document.getElementById('count').textContent=allRows.length+' resultados recolhidos';showPage(1)}
+  if(st.partial_results&&!st.done){allRows=st.partial_results;document.getElementById('count').textContent=allRows.length+' resultados recolhidos (pesquisa em curso)';showPage(currentPage,false)}
   if(st.done){
    done=true;activeTask=null;allRows=st.results||[];
    document.getElementById('count').textContent=allRows.length+' anúncios encontrados';
@@ -1152,7 +1154,7 @@ async function runSearch(){
     statusHtml+='<div class=status><strong>Fontes sem resultados:</strong> '+emptySources.map(esc).join(', ')+'. Pretendes excluir alguma destas plataformas das próximas pesquisas? A exclusão só será feita depois da tua confirmação.</div>';
    }
    document.getElementById('status').innerHTML=statusHtml;
-   showPage(1);
+   showPage(currentPage,false);
   }
  }
  }catch(e){document.getElementById('status').innerHTML='<div class="status error">Erro: '+esc(e.message)+'</div>'}
