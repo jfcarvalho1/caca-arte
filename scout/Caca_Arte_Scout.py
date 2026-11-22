@@ -37,7 +37,7 @@ import logging, os, hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 APP_DIR = Path(__file__).resolve().parent
 (APP_DIR / "data").mkdir(exist_ok=True)
 LOG = logging.getLogger("scout")
@@ -50,6 +50,34 @@ if not LOG.handlers:
 _HTTP_CACHE = {}
 _HTTP_LOCK = threading.Lock()
 _HTTP_CACHE_MAX = 400
+
+# Certificados: em alguns Windows o Python recusa sites válidos com
+# "certificate has expired" (cadeia antiga no armazém do Windows), embora o
+# navegador os aceite. Usa-se primeiro o pacote de autoridades do certifi
+# (o mesmo do pip) e só depois o do sistema. A verificação NUNCA é desligada.
+import ssl
+
+def _build_ssl_contexts():
+    contexts = []
+    cafile = None
+    try:
+        import certifi
+        cafile = certifi.where()
+    except Exception:
+        try:
+            from pip._vendor import certifi as _pip_certifi
+            cafile = _pip_certifi.where()
+        except Exception:
+            cafile = None
+    if cafile:
+        try:
+            contexts.append(("certifi", ssl.create_default_context(cafile=cafile)))
+        except Exception:
+            pass
+    contexts.append(("sistema", ssl.create_default_context()))
+    return contexts
+
+_SSL_CONTEXTS = _build_ssl_contexts()
 
 ARTISTS = ["Cruzeiro Seixas", "Noronha da Costa", "José de Guimarães", "Manuel Cargaleiro", "Luzia Lage", "Alfredo Luz", "Sofia Areal", "Paula Rego", "Nadir Afonso", "Júlio Pomar", "Júlio Resende", "João Cutileiro", "Kiki Lima"]
 CATEGORIES = ["Todas", "Livros", "Catálogos", "Serigrafias", "Gravuras", "Pinturas", "Guaches e aguarelas", "Esculturas", "Desenhos", "Fotografias", "Posters e cartazes"]
@@ -72,8 +100,22 @@ def get(url, timeout=12):
     req = Request(url, headers=headers)
     started = time.time()
     try:
-        with urlopen(req, timeout=timeout) as response:
-            data = response.read()
+        data = response = None
+        last_ssl_error = None
+        for ctx_name, ctx in _SSL_CONTEXTS:
+            try:
+                with urlopen(req, timeout=timeout, context=ctx) as response:
+                    data = response.read()
+                break
+            except Exception as exc:
+                reason = getattr(exc, "reason", exc)
+                if isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(exc):
+                    last_ssl_error = exc
+                    LOG.warning("Certificado recusado (%s) em %s: %s", ctx_name, url, exc)
+                    continue
+                raise
+        if data is None:
+            raise RuntimeError(f"Certificado de segurança recusado por {urlparse(url).netloc}: {last_ssl_error}")
         LOG.info("GET %s -> %s (%d bytes, %.1fs)", url, getattr(response, "status", "?"), len(data), time.time() - started)
         with _HTTP_LOCK:
             if len(_HTTP_CACHE) > _HTTP_CACHE_MAX:
@@ -135,7 +177,7 @@ class _P55ProductLinkParser(HTMLParser):
         if not value:
             return
         value = html.unescape(str(value)).replace("\\/", "/")
-        for match in re.finditer(r"(?:https?://www\.p55\.art)?/products/([a-zA-Z0-9_-]+)", value):
+        for match in re.finditer(r"(?:https?://www\.p55\.art)?/products/([^\s\"'<>?#/\\]+)", value):
             self.links.add(match.group(1))
 
     def handle_starttag(self, tag, attrs):
@@ -165,7 +207,7 @@ def _p55_collection_html_products(handle, max_pages=20):
     for product_handle in handles:
         product = None
         try:
-            payload = json.loads(get(f"https://www.p55.art/products/{quote(product_handle)}.js").decode("utf-8", "replace"))
+            payload = json.loads(get(f"https://www.p55.art/products/{quote(product_handle, safe='%')}.js").decode("utf-8", "replace"))
             if isinstance(payload, dict) and payload.get("handle"):
                 product = payload
         except Exception:
@@ -173,7 +215,7 @@ def _p55_collection_html_products(handle, max_pages=20):
 
         if product is None:
             try:
-                raw = get(f"https://www.p55.art/products/{quote(product_handle)}").decode("utf-8", "replace")
+                raw = get(f"https://www.p55.art/products/{quote(product_handle, safe='%')}").decode("utf-8", "replace")
                 blocks = re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', raw, re.I | re.S)
                 for block in blocks:
                     try:
@@ -265,6 +307,8 @@ def search_artist(artist, category, limit):
 
     # Fallback: mantém o autocomplete para nomes cujo identificador de colecção
     # não siga a convenção previsível ou quando o endpoint de colecção falha.
+    suggest_errors = []
+    suggest_ok = 0
     if not products_by_key:
         for query_name in query_names:
             url = (
@@ -274,11 +318,17 @@ def search_artist(artist, category, limit):
             )
             try:
                 data = json.loads(get(url).decode("utf-8", "replace"))
+                suggest_ok += 1
                 for product in data.get("resources", {}).get("results", {}).get("products", []):
                     key = product.get("handle") or product.get("url") or product.get("title")
                     products_by_key[key] = product
-            except Exception:
+            except Exception as exc:
+                suggest_errors.append(f"{type(exc).__name__}: {exc}")
                 continue
+        # Correcção 0.4.1: se nenhum pedido à P55 resultou, é FALHA (antes
+        # aparecia como "0 resultados, 0 falhas").
+        if not products_by_key and suggest_ok == 0 and (collection_errors or suggest_errors):
+            raise RuntimeError("P55.art inacessível: " + (collection_errors + suggest_errors)[0][:400])
 
     results = []
     for product in products_by_key.values():
@@ -976,7 +1026,7 @@ button.secondary{margin-top:17px;padding:13px 18px;background:#293341;color:var(
 @media(max-width:720px){.area-grid{grid-template-columns:1fr}.grid{grid-template-columns:1fr}header h1{font-size:24px}.panel{padding:15px}}
 </style></head><body>
 <header><div class="brand"><div class="brand-mark">✦</div> CAÇA À ARTE SCOUT</div>
-<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.0</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
+<h1>Centro de Pesquisa <span style="font-size:13px;color:#aab2bd">v0.4.1</span></h1><p>Pesquisa especializada por artista, livros e mercado de usados.</p></header>
 <main class="wrap">
 <h2 class="section-title">Escolhe uma área de pesquisa</h2>
 <div class="area-grid">

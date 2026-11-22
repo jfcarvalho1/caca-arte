@@ -10,7 +10,7 @@ INSTALAR (uma vez)
 2. Duplo clique em  INSTALAR.bat
    - procura o Python (se não houver, tenta instalá-lo com o winget, gratuito);
    - cria o ambiente local .venv e instala o único requisito (rapidfuzz);
-   - corre os 34 testes offline;
+   - corre os 39 testes offline;
    - cria o atalho "Caca a Arte Scout" no Ambiente de Trabalho.
 
 USAR
