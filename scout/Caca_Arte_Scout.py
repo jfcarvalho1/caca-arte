@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Caça à Arte Scout: pesquisa de obras em fontes seleccionadas."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, quote, urlencode
+from urllib.parse import urlparse, parse_qs, quote, urlencode, urljoin
+from urllib.parse import unquote as urllib_unquote
 from urllib.request import Request, urlopen
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json, re, html, threading, webbrowser, time, uuid, unicodedata
@@ -542,30 +543,34 @@ BOOKSHOP_FALLBACK_URLS = {
 
 
 def search_liliana_queiroz(artist, category, limit):
-    """Liliana Queiroz: o formulário de pesquisa envia por POST o campo Tpesq
-    para ?tipo=pesql (verificado no site real em 23-11-2026)."""
-    base = BOOKSHOP_SOURCES["Livraria Alfarrabista Liliana Queiroz"]
-    post = lambda url, timeout=15: get(url, timeout, data={"Tpesq": artist})
-    raw = post(base.rstrip("/") + "/?tipo=pesql").decode("utf-8", "replace")
-    if adapters.MISSING_QUERY.search(adapters.clean_text(raw)[:20000]):
-        raise RuntimeError("Liliana Queiroz não aceitou a pesquisa (formulário mudou?)")
-    cards = _CardParser.cards(raw, base, artist)
-    if not cards:
-        cards = [c for c in _CardParser.cards(raw, base, "")][:40]
-        confirmed = []
-        for c in cards[:15]:
-            c, text = adapters.enrich_detail(dict(c), get)
-            if adapters.artist_in(artist, text):
-                confirmed.append(c)
-        cards = confirmed
-    out = []
-    for i, c in enumerate(cards):
-        item = adapters.make_item(artist, "Livraria Alfarrabista Liliana Queiroz", c.get("title", ""), c["url"],
-                                  c.get("price"), c.get("image", ""), c.get("description", ""),
-                                  availability="Encontrado no catálogo; confirmar na ficha")
-        if i < 12 and (not item["image"] or item["price"] is None):
-            item, _ = adapters.enrich_detail(item, get)
-        out.append(item)
+    """Liliana Queiroz: o formulário envia por POST o campo Tpesq para
+    ?tipo=pesql (verificado no site real em 23-11-2026). Os livros são
+    ligações ?livro=<n>&titulo=<slug>. A frase "Falta a pesquisa" existe
+    escondida em todas as páginas e NÃO indica erro."""
+    base = BOOKSHOP_SOURCES["Livraria Alfarrabista Liliana Queiroz"].rstrip("/")
+    raw = get(base + "/?tipo=pesql", 20, data={"Tpesq": artist}).decode("utf-8", "replace")
+    out, seen = [], set()
+    for m in re.finditer(r"href=['\"](\?livro=(\d+)(?:&(?:amp;)?titulo=([^'\"]*))?)['\"]", raw):
+        book_id = m.group(2)
+        if book_id in seen:
+            continue
+        nxt = raw.find("?livro=", m.end())
+        while nxt != -1 and raw[nxt + 7:nxt + 7 + len(book_id)] == book_id:
+            nxt = raw.find("?livro=", nxt + 7)
+        block = raw[m.start():(nxt if nxt != -1 else m.end() + 1500)]
+        text = adapters.clean_text(block)
+        if not adapters.artist_in(artist, text):
+            continue
+        seen.add(book_id)
+        title = adapters.clean_text(urllib_unquote((m.group(3) or "").replace("-", " "))) or text[:120]
+        img = re.search(r"<img[^>]+src=['\"]([^'\"]+)['\"]", block, re.I)
+        out.append(adapters.make_item(artist, "Livraria Alfarrabista Liliana Queiroz", title,
+                                      f"{base}/?livro={book_id}", adapters.parse_price(text),
+                                      urljoin(base + "/", img.group(1)) if img else "", text[:300],
+                                      availability="Disponível no catálogo da livraria", listing_id=book_id))
+    for i, item in enumerate(out[:12]):
+        if not item["image"] or item["price"] is None:
+            out[i], _ = adapters.enrich_detail(item, get)
     return out[:limit]
 
 
