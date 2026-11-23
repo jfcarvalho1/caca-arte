@@ -36,8 +36,10 @@ EXTRA_ARTISTS = DATA_DIR / "artistas_extra.json"
 # Só fontes com motor directo: os motores de pesquisa (Bing/DDG/Brave)
 # bloqueiam pedidos automáticos e só gastariam tempo.
 AREAS = {
-    "Arte": ["P55.art", "Galeria São Mamede", "Underdogs Gallery", "Centro Português de Serigrafia",
-             "Art4All", "Culturas Galeria", "TWOART Gallery", "Galeria 111", "In7Artes"],
+    "Arte": ["Galeria São Mamede", "Underdogs Gallery", "Centro Português de Serigrafia",
+             "Art4All", "Culturas Galeria", "TWOART Gallery", "In7Artes"],
+    # P55.art: a Cloudflare recusa servidores na nuvem (HTTP 403); a app lê a P55
+    # directamente no iPhone/iPad. Galeria 111: sem loja e recusa o servidor.
     "Livros": ["Alfarrabista Manuel Ferreira", "Livraria Alfarrabista Liliana Queiroz", "Livraria Sá da Costa"],
     "Usados": ["OLX", "CustoJusto"],
 }
