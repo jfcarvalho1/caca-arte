@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Caça à Arte Scout: pesquisa de obras em fontes seleccionadas."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, quote
+from urllib.parse import urlparse, parse_qs, quote, urlencode
 from urllib.request import Request, urlopen
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json, re, html, threading, webbrowser, time, uuid, unicodedata
@@ -95,9 +95,11 @@ CATEGORIES = ["Todas", "Livros", "Catálogos", "Serigrafias", "Gravuras", "Pintu
 PATTERNS = {"Livros": r"livro|book|monografia", "Catálogos": r"catálogo|catalog", "Serigrafias": r"serigrafia|serigraph|screenprint|silkscreen", "Gravuras": r"gravura|etching|lithograph|litografia|xilogravura", "Pinturas": r"pintura|painting|óleo|oil on|acrílico|acrylic", "Guaches e aguarelas": r"guache|gouache|aguarela|watercolou?r", "Esculturas": r"escultura|sculpture|cerâmica|ceramic", "Desenhos": r"desenho|drawing|lápis|grafite", "Fotografias": r"fotografia|photograph", "Posters e cartazes": r"poster|cartaz|affiche"}
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
 
-def get(url, timeout=12):
+def get(url, timeout=12, data=None):
+    """GET (ou POST quando data é dado, para formulários de pesquisa)."""
+    cache_key = url if data is None else url + "\x00" + repr(data)
     with _HTTP_LOCK:
-        cached = _HTTP_CACHE.get(url)
+        cached = _HTTP_CACHE.get(cache_key)
     if cached is not None:
         return cached
     headers = {
@@ -108,7 +110,11 @@ def get(url, timeout=12):
     # O Referer da P55 só é enviado à própria P55 (antes ia para todos os sites).
     if "p55.art" in urlparse(url).netloc:
         headers["Referer"] = "https://www.p55.art/"
-    req = Request(url, headers=headers)
+    body = None
+    if data is not None:
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        body = urlencode(data).encode("utf-8") if isinstance(data, dict) else data
+    req = Request(url, headers=headers, data=body)
     started = time.time()
     try:
         data = response = None
@@ -131,7 +137,7 @@ def get(url, timeout=12):
         with _HTTP_LOCK:
             if len(_HTTP_CACHE) > _HTTP_CACHE_MAX:
                 _HTTP_CACHE.clear()
-            _HTTP_CACHE[url] = data
+            _HTTP_CACHE[cache_key] = data
         return data
     except HTTPError as exc:
         LOG.warning("GET %s -> HTTP %s", url, exc.code)
@@ -535,6 +541,34 @@ BOOKSHOP_FALLBACK_URLS = {
 }
 
 
+def search_liliana_queiroz(artist, category, limit):
+    """Liliana Queiroz: o formulário de pesquisa envia por POST o campo Tpesq
+    para ?tipo=pesql (verificado no site real em 23-11-2026)."""
+    base = BOOKSHOP_SOURCES["Livraria Alfarrabista Liliana Queiroz"]
+    post = lambda url, timeout=15: get(url, timeout, data={"Tpesq": artist})
+    raw = post(base.rstrip("/") + "/?tipo=pesql").decode("utf-8", "replace")
+    if adapters.MISSING_QUERY.search(adapters.clean_text(raw)[:20000]):
+        raise RuntimeError("Liliana Queiroz não aceitou a pesquisa (formulário mudou?)")
+    cards = _CardParser.cards(raw, base, artist)
+    if not cards:
+        cards = [c for c in _CardParser.cards(raw, base, "")][:40]
+        confirmed = []
+        for c in cards[:15]:
+            c, text = adapters.enrich_detail(dict(c), get)
+            if adapters.artist_in(artist, text):
+                confirmed.append(c)
+        cards = confirmed
+    out = []
+    for i, c in enumerate(cards):
+        item = adapters.make_item(artist, "Livraria Alfarrabista Liliana Queiroz", c.get("title", ""), c["url"],
+                                  c.get("price"), c.get("image", ""), c.get("description", ""),
+                                  availability="Encontrado no catálogo; confirmar na ficha")
+        if i < 12 and (not item["image"] or item["price"] is None):
+            item, _ = adapters.enrich_detail(item, get)
+        out.append(item)
+    return out[:limit]
+
+
 def search_bookshop(artist, category, source, limit):
     """Livrarias/alfarrabistas com conector directo.
 
@@ -543,6 +577,8 @@ def search_bookshop(artist, category, source, limit):
     Costa mudou para /livros). Os cartões sem imagem/preço são completados
     com a ficha individual (og:image, JSON-LD), como na versão FILTRO_LIVROS."""
     base = BOOKSHOP_SOURCES[source]
+    if source == "Livraria Alfarrabista Liliana Queiroz":
+        return search_liliana_queiroz(artist, category, limit)
     q = quote(artist)
     fallback = [base + path.format(q=q) for path in BOOKSHOP_FALLBACK_URLS.get(source, [])]
     return adapters.search_bookshop_auto(artist, category, source, base, get, _CardParser.cards,

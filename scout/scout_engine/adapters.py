@@ -482,7 +482,12 @@ def parse_saomamede_artist(raw, page_url):
 
 def search_sao_mamede(artist, category, limit, fetch, patterns, enrich=True):
     page_url = "https://www.saomamede.com/listagem/artistas/" + slugify(artist)
-    raw = fetch(page_url, 18).decode("utf-8", "replace")
+    try:
+        raw = fetch(page_url, 18).decode("utf-8", "replace")
+    except Exception as exc:
+        if "HTTP 404" in str(exc):
+            return []  # artista não representado pela galeria
+        raise
     works = parse_saomamede_artist(raw, page_url)
     if not works:
         if re.search(r"obras de arte", raw, re.I):

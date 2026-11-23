@@ -61,10 +61,13 @@ class SaoMamedeTests(unittest.TestCase):
         rows = adapters.search_sao_mamede("Cruzeiro Seixas", "Serigrafias", 10, fetch, app.PATTERNS)
         self.assertEqual([r["title"] for r in rows], ["Elementos a partir de Serigrafia"])
 
-    def test_missing_artist_page_is_failure(self):
-        fetch = fake_fetch({})
+    def test_missing_artist_page_is_empty_not_failure(self):
+        # 404 = artista não representado pela galeria (verificado no GitHub, 23-11-2026)
+        self.assertEqual(adapters.search_sao_mamede("Artista Inexistente", "Todas", 10, fake_fetch({}), app.PATTERNS), [])
+
+    def test_other_errors_are_failures(self):
         with self.assertRaises(Exception):
-            adapters.search_sao_mamede("Artista Inexistente", "Todas", 10, fetch, app.PATTERNS)
+            adapters.search_sao_mamede("X", "Todas", 10, fake_fetch({"https://www.saomamede.com/*": RuntimeError("HTTP 500")}), app.PATTERNS)
 
 
 def olx_page(ads):

@@ -109,6 +109,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px
 <script>
 const REPO = "jfcarvalho1/caca-arte";
 const PAGE = 60;
+let P55 = [], p55State = "";
 let DATA = {items: [], status: []}, area = "Arte", shown = PAGE, onlyNew = false, withPrice = false, maxPrice = null;
 const $ = id => document.getElementById(id);
 const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -137,12 +138,40 @@ async function load(force) {
   a.innerHTML = '<option value="">Todos os artistas</option>' + (DATA.artists || []).map(n => `<option>${esc(n)}</option>`).join("");
   a.value = cur;
   render();
+  loadP55(force);
+}
+
+// P55.art protege-se dos servidores na nuvem (Cloudflare); o iPhone/iPad é um
+// visitante normal, por isso a app vai buscar a P55 directamente, 1x por hora.
+const slug = s => fold(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+async function loadP55(force) {
+  try { const c = JSON.parse(localStorage.getItem("cap55") || "null"); if (c && !force && Date.now() - c.t < 3600000) { P55 = c.items; p55State = "ok"; render(); return; } } catch(e) {}
+  const artists = DATA.artists || [], out = []; let ok = 0, blocked = 0;
+  const one = async a => {
+    try {
+      const r = await fetch(`https://www.p55.art/collections/${slug(a)}/products.json?limit=250`);
+      if (!r.ok) { if (r.status !== 404) blocked++; return; }
+      const j = await r.json(); ok++;
+      for (const p of j.products || []) {
+        const v = (p.variants || []).filter(x => x.available); if (!v.length) continue;
+        const txt = fold(p.title + " " + (p.body_html || "")); if (!txt.includes(fold(a))) continue;
+        const desc = (p.body_html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        out.push({key: "p55-" + p.id, area: "Arte", source: "P55.art", artist: a, title: desc.slice(0, 140) || p.title,
+          price: Math.min(...v.map(x => parseFloat(x.price))), url: "https://www.p55.art/products/" + p.handle,
+          image: (p.images && p.images[0] && p.images[0].src) || "", description: desc, first_seen: p.published_at || p.created_at, published: p.published_at});
+      }
+    } catch (e) { blocked++; }
+  };
+  for (let i = 0; i < artists.length; i += 4) await Promise.all(artists.slice(i, i + 4).map(one));
+  p55State = ok ? "ok" : (blocked ? "bloqueado" : "vazio");
+  if (ok) { P55 = out; try { localStorage.setItem("cap55", JSON.stringify({t: Date.now(), items: out})); } catch(e) {} }
+  render();
 }
 
 function filtered() {
   const q = fold($("q").value), art = $("artist").value, src = $("source").value;
   const lastRun = DATA.updated;
-  let rows = DATA.items.filter(it => it.area === area);
+  let rows = DATA.items.concat(P55).filter(it => it.area === area);
   // fontes da área para o filtro
   const sources = [...new Set(rows.map(it => it.source))].sort((x, y) => x.localeCompare(y, "pt"));
   const sel = $("source"), prev = sel.value;
@@ -174,7 +203,9 @@ function render() {
   $("maxPriceBtn").textContent = maxPrice ? "Até " + eur(maxPrice) : "Preço máximo";
   const rows = filtered();
   const newN = rows.filter(isRecent).length;
-  $("info").textContent = rows.length + " anúncios" + (newN ? ` · ${newN} novos nos últimos 3 dias` : "");
+  $("info").innerHTML = rows.length + " anúncios" + (newN ? ` · ${newN} novos nos últimos 3 dias` : "") +
+    (area === "Arte" && p55State === "bloqueado" ? ' · <a style="color:var(--gold)" href="https://www.p55.art/" target="_blank" rel="noopener">P55 só no site ↗</a>' : "") +
+    (area === "Arte" && !p55State ? " · a ler a P55…" : "");
   $("grid").innerHTML = rows.length ? rows.slice(0, shown).map(card).join("") :
     `<div class="empty">Sem anúncios com estes filtros.${DATA.items.length ? "" : "<br><br>A primeira pesquisa automática ainda não correu."}</div>`;
   $("more").hidden = rows.length <= shown;
