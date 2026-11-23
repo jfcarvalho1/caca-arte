@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caça à Arte</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caça à Arte">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#12161c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--bg:#12161c;--panel:#1b222b;--line:#2c3643;--text:#eef1f4;--muted:#9aa5b1;--gold:#f2b441;--new:#3fb27f;--red:#e0645c}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:rgba(18,22,28,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font-size:20px;margin:0;letter-spacing:.2px}h1 b{color:var(--gold)}
+#upd{font-size:12px;color:var(--muted);text-align:right}
+.tabs{display:flex;gap:6px;margin:10px 0 8px;overflow-x:auto}
+.tab{flex:1;min-width:80px;padding:9px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-weight:600;font-size:14px}
+.tab.on{background:var(--gold);color:#1a1300;border-color:var(--gold)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+select,input{flex:1;min-width:130px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chip{font-size:13px;padding:6px 10px;border-radius:20px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.chip.on{border-color:var(--new);color:var(--new)}
+main{padding:10px 12px calc(env(safe-area-inset-bottom) + 30px);max-width:1400px;margin:0 auto}
+#info{color:var(--muted);font-size:13px;margin:4px 2px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;color:inherit;text-decoration:none;position:relative}
+.card img,.noimg{width:100%;aspect-ratio:1/1;object-fit:cover;background:#0c0f13;display:block}
+.noimg{display:grid;place-items:center;color:var(--muted);font-size:12px}
+.body{padding:8px 9px 10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.price{font-weight:700;font-size:16px;color:var(--gold)}
+.price s{color:var(--muted);font-weight:400;font-size:12px;margin-left:4px}
+.title{font-size:13.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{font-size:11.5px;color:var(--muted);margin-top:auto}
+.badge{position:absolute;top:8px;left:8px;background:var(--new);color:#03140c;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px}
+.more{display:block;margin:16px auto;padding:12px 22px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px}
+.btn{padding:9px 12px;border-radius:10px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-weight:600;font-size:14px;white-space:nowrap}
+.empty{color:var(--muted);text-align:center;padding:40px 10px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;max-width:520px;width:92%}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{margin:0 0 8px;font-size:18px}
+dialog p,dialog li{color:var(--muted);font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:left}
+.ok{color:var(--new)}.bad{color:var(--red)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>Caça à <b>Arte</b></h1>
+    <div id="upd">a carregar…</div>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-area="Arte">Arte</button>
+    <button class="tab" data-area="Livros">Livros</button>
+    <button class="tab" data-area="Usados">Usados</button>
+  </div>
+  <div class="row">
+    <select id="artist" aria-label="Artista"><option value="">Todos os artistas</option></select>
+    <select id="sort" aria-label="Ordenar">
+      <option value="new">Mais recentes</option>
+      <option value="old">Mais antigos</option>
+      <option value="pa">Preço: mais barato</option>
+      <option value="pd">Preço: mais caro</option>
+      <option value="src">Fonte (A-Z)</option>
+    </select>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <input id="q" type="search" placeholder="Filtrar: título, técnica, fonte…" aria-label="Filtrar">
+    <select id="source" aria-label="Fonte"><option value="">Todas as fontes</option></select>
+  </div>
+  <div class="chips">
+    <button class="chip" id="onlyNew">Só novidades</button>
+    <button class="chip" id="withPrice">Só com preço</button>
+    <button class="chip" id="maxPriceBtn">Preço máximo</button>
+    <button class="chip" id="newArtist">+ Pesquisar outro artista</button>
+    <button class="chip" id="stateBtn">Estado das fontes</button>
+  </div>
+</header>
+<main>
+  <div id="info"></div>
+  <div class="grid" id="grid"></div>
+  <button class="more" id="more" hidden>Mostrar mais</button>
+</main>
+
+<dialog id="dlgArtist">
+  <h2>Pesquisar outro artista</h2>
+  <p>A pesquisa corre nos servidores gratuitos do GitHub e demora 2 a 5 minutos. O GitHub abre-se com o pedido já escrito: basta carregar em <b>Create / Submit new issue</b>. Depois volte aqui e actualize.</p>
+  <input id="newName" placeholder="Nome do artista" autocomplete="off">
+  <div class="row" style="margin-top:12px;justify-content:flex-end">
+    <button class="btn" onclick="dlgArtist.close()">Cancelar</button>
+    <button class="btn" id="goArtist">Pesquisar</button>
+  </div>
+</dialog>
+<dialog id="dlgState">
+  <h2>Estado das fontes</h2>
+  <p id="stateInfo"></p>
+  <table id="stateTable"></table>
+  <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn" onclick="dlgState.close()">Fechar</button></div>
+</dialog>
+
+<script>
+const REPO = "jfcarvalho1/caca-arte";
+const PAGE = 60;
+let DATA = {items: [], status: []}, area = "Arte", shown = PAGE, onlyNew = false, withPrice = false, maxPrice = null;
+const $ = id => document.getElementById(id);
+const fold = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate = iso => { try { return new Date(iso).toLocaleDateString("pt-PT", {day:"2-digit", month:"short"}); } catch(e) { return ""; } };
+const eur = v => v == null ? "Preço sob consulta" : v.toLocaleString("pt-PT", {style:"currency", currency:"EUR", maximumFractionDigits: v % 1 ? 2 : 0});
+function save() { try { localStorage.setItem("caf", JSON.stringify({area, artist:$("artist").value, sort:$("sort").value, onlyNew, withPrice, maxPrice, source:$("source").value})); } catch(e) {} }
+function restore() { try { const s = JSON.parse(localStorage.getItem("caf") || "{}"); if (s.area) area = s.area; onlyNew = !!s.onlyNew; withPrice = !!s.withPrice; maxPrice = s.maxPrice ?? null; return s; } catch(e) { return {}; } }
+
+async function load(force) {
+  $("upd").textContent = "a actualizar…";
+  try {
+    const r = await fetch("data/resultados.json?t=" + (force ? Date.now() : Math.floor(Date.now() / 300000)), {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    DATA = await r.json();
+    try { localStorage.setItem("cadata", JSON.stringify(DATA)); } catch(e) {}
+  } catch (e) {
+    try { DATA = JSON.parse(localStorage.getItem("cadata")) || DATA; } catch(_) {}
+    $("upd").textContent = "sem ligação (dados guardados)";
+  }
+  if (DATA.updated) {
+    const d = new Date(DATA.updated);
+    $("upd").innerHTML = "Actualizado<br>" + d.toLocaleString("pt-PT", {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"});
+  }
+  const a = $("artist"), cur = a.value || restore().artist || "";
+  a.innerHTML = '<option value="">Todos os artistas</option>' + (DATA.artists || []).map(n => `<option>${esc(n)}</option>`).join("");
+  a.value = cur;
+  render();
+}
+
+function filtered() {
+  const q = fold($("q").value), art = $("artist").value, src = $("source").value;
+  const lastRun = DATA.updated;
+  let rows = DATA.items.filter(it => it.area === area);
+  // fontes da área para o filtro
+  const sources = [...new Set(rows.map(it => it.source))].sort((x, y) => x.localeCompare(y, "pt"));
+  const sel = $("source"), prev = sel.value;
+  sel.innerHTML = '<option value="">Todas as fontes</option>' + sources.map(s => `<option>${esc(s)}</option>`).join("");
+  sel.value = sources.includes(prev) ? prev : "";
+  if (art) rows = rows.filter(it => it.artist === art);
+  if (sel.value) rows = rows.filter(it => it.source === sel.value);
+  if (q) rows = rows.filter(it => fold(it.title + " " + it.description + " " + it.source + " " + it.artist).includes(q));
+  if (onlyNew) rows = rows.filter(it => it.first_seen === lastRun || isRecent(it));
+  if (withPrice) rows = rows.filter(it => it.price != null);
+  if (maxPrice) rows = rows.filter(it => it.price != null && it.price <= maxPrice);
+  const s = $("sort").value, P = it => it.price == null ? null : it.price;
+  const byPrice = dir => (x, y) => P(x) == null ? 1 : P(y) == null ? -1 : dir * (P(x) - P(y));
+  const date = it => it.published || it.first_seen || "";
+  if (s === "new") rows.sort((x, y) => date(y).localeCompare(date(x)));
+  if (s === "old") rows.sort((x, y) => date(x).localeCompare(date(y)));
+  if (s === "pa") rows.sort(byPrice(1));
+  if (s === "pd") rows.sort(byPrice(-1));
+  if (s === "src") rows.sort((x, y) => x.source.localeCompare(y.source, "pt"));
+  return rows;
+}
+const isRecent = it => it.first_seen && (Date.now() - new Date(it.first_seen)) < 3 * 86400000;
+
+function render() {
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.area === area));
+  $("onlyNew").classList.toggle("on", onlyNew);
+  $("withPrice").classList.toggle("on", withPrice);
+  $("maxPriceBtn").classList.toggle("on", !!maxPrice);
+  $("maxPriceBtn").textContent = maxPrice ? "Até " + eur(maxPrice) : "Preço máximo";
+  const rows = filtered();
+  const newN = rows.filter(isRecent).length;
+  $("info").textContent = rows.length + " anúncios" + (newN ? ` · ${newN} novos nos últimos 3 dias` : "");
+  $("grid").innerHTML = rows.length ? rows.slice(0, shown).map(card).join("") :
+    `<div class="empty">Sem anúncios com estes filtros.${DATA.items.length ? "" : "<br><br>A primeira pesquisa automática ainda não correu."}</div>`;
+  $("more").hidden = rows.length <= shown;
+  save();
+}
+function card(it) {
+  const img = it.image ? `<img loading="lazy" referrerpolicy="no-referrer" src="${esc(it.image)}" alt="" onerror="this.outerHTML='<div class=noimg>sem imagem</div>'">` : `<div class="noimg">sem imagem</div>`;
+  const prev = it.previous_price != null && it.previous_price !== it.price ? `<s>${eur(it.previous_price)}</s>` : "";
+  return `<a class="card" href="${esc(it.url)}" target="_blank" rel="noopener">${isRecent(it) ? '<span class="badge">NOVO</span>' : ""}${img}
+    <div class="body"><div class="price">${eur(it.price)}${prev}</div><div class="title">${esc(it.title)}</div>
+    <div class="meta">${esc(it.artist)} · ${esc(it.source)}<br>${it.published ? "publicado " + fmtDate(it.published) : "visto " + fmtDate(it.first_seen)}${it.location ? " · " + esc(it.location) : ""}</div></div></a>`;
+}
+
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => { area = b.dataset.area; shown = PAGE; $("source").value = ""; render(); scrollTo(0, 0); });
+["artist", "sort", "source"].forEach(id => $(id).onchange = () => { shown = PAGE; render(); });
+$("q").oninput = () => { shown = PAGE; render(); };
+$("more").onclick = () => { shown += PAGE; render(); };
+$("onlyNew").onclick = () => { onlyNew = !onlyNew; shown = PAGE; render(); };
+$("withPrice").onclick = () => { withPrice = !withPrice; shown = PAGE; render(); };
+$("maxPriceBtn").onclick = () => {
+  const v = prompt("Preço máximo em euros (vazio para retirar):", maxPrice || "");
+  if (v === null) return;
+  const n = parseFloat(String(v).replace(",", "."));
+  maxPrice = n > 0 ? n : null; shown = PAGE; render();
+};
+$("newArtist").onclick = () => { $("newName").value = ""; $("dlgArtist").showModal(); };
+$("goArtist").onclick = () => {
+  const name = $("newName").value.trim();
+  if (!name) return;
+  const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent("Pesquisar: " + name)}&body=${encodeURIComponent("Pedido feito pela app Caça à Arte. Basta submeter.")}`;
+  $("dlgArtist").close();
+  window.open(url, "_blank");
+};
+$("stateBtn").onclick = () => {
+  const st = DATA.status || [];
+  $("stateInfo").textContent = DATA.updated ? `Última pesquisa: ${new Date(DATA.updated).toLocaleString("pt-PT")} (${Math.round((DATA.duration_s || 0) / 60)} min).` : "Ainda sem pesquisas.";
+  $("stateTable").innerHTML = "<tr><th>Área</th><th>Fonte</th><th>Resultados</th><th>Falhas</th></tr>" +
+    st.map(s => `<tr><td>${esc(s.area)}</td><td>${esc(s.source)}</td><td class="${s.results ? "ok" : ""}">${s.results}</td><td class="${s.failed ? "bad" : ""}" title="${esc((s.errors || []).join(" | "))}">${s.failed}</td></tr>`).join("");
+  $("dlgState").showModal();
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(false); });
+let y0 = null;
+addEventListener("touchstart", e => { y0 = scrollY === 0 ? e.touches[0].clientY : null; }, {passive: true});
+addEventListener("touchend", e => { if (y0 !== null && e.changedTouches[0].clientY - y0 > 90) load(true); y0 = null; }, {passive: true});
+
+const saved = restore();
+if (saved.sort) $("sort").value = saved.sort;
+load(false);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

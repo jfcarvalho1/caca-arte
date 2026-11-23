@@ -1,0 +1,77 @@
+name: Scout automático
+
+# Corre a Caça à Arte Scout nos servidores do GitHub e actualiza docs/data,
+# que a app do iPhone/iPad lê.
+#  - automaticamente de 6 em 6 horas;
+#  - manualmente (separador Actions > Scout automático > Run workflow);
+#  - quando o dono do repositório abre um pedido (issue) "Pesquisar: Nome".
+on:
+  schedule:
+    - cron: "17 5,11,17,23 * * *"
+  workflow_dispatch:
+    inputs:
+      artista:
+        description: "Artista adicional a pesquisar (opcional)"
+        required: false
+        default: ""
+  issues:
+    types: [opened]
+  push:
+    branches: [main]
+    paths:
+      - "scout/scout_runner.py"
+      - "scout/scout_engine/adapters.py"
+      - ".github/workflows/scout-automatico.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: scout-automatico
+  cancel-in-progress: false
+
+jobs:
+  scout:
+    if: >-
+      github.event_name != 'issues' ||
+      (startsWith(github.event.issue.title, 'Pesquisar:') &&
+       github.event.issue.user.login == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Requisitos
+        run: pip install --disable-pip-version-check -q rapidfuzz certifi
+      - name: Pesquisar
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          INPUT_ARTISTA: ${{ github.event.inputs.artista }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          EXTRA="$INPUT_ARTISTA"
+          ONLY=""
+          if [ -n "$ISSUE_TITLE" ]; then
+            EXTRA="$(printf '%s' "$ISSUE_TITLE" | sed 's/^Pesquisar:[[:space:]]*//')"
+            ONLY="--so-extra"
+          fi
+          python scout/scout_runner.py --extra "$EXTRA" $ONLY --max-minutos 45
+      - name: Guardar resultados
+        run: |
+          git config user.name "caca-arte-bot"
+          git config user.email "caca-arte-bot@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then echo "Sem alterações"; exit 0; fi
+          git commit -q -m "Resultados Scout $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q && break; sleep 5; done
+      - name: Responder ao pedido
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "Pesquisa feita. Abra a app Caça à Arte e puxe para baixo para actualizar."
+          gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }}
