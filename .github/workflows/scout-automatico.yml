@@ -21,6 +21,7 @@ on:
     paths:
       - "scout/scout_runner.py"
       - "scout/scout_engine/adapters.py"
+      - "scout/Caca_Arte_Scout.py"
       - ".github/workflows/scout-automatico.yml"
 
 permissions:
